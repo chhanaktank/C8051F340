@@ -1,0 +1,107 @@
+#include “C8051F340.h”
+#define SYSCLK 12000000
+
+Void delay(unsigned int);
+Void cmdwrt(unsigned char);
+Void datawrtc(unsigned char);
+Void convert_display(unsigned char);
+
+Sbit LCD_RS=P1^5;  //Register Select(RS) pin of 16*2 lcd	
+Sbit LCD_RW=P1^6;  //Read/Write(RW) pin of 16*2 lcd
+Sbit LCD_EN=P1^7; //Enable(E) pin of 16*2 lcd
+
+Void main()
+{
+Unsigned char i;
+Unsigned char data1[]=”temperature:”;
+Unsigned char value;
+OSCICN=0x83; //System Clock 12 MHz
+XBR1=0x40; // Enable crossbar
+P4MDOUT=0xFF; // P4 connected make o/p
+P1MDOUT=0xE0; 
+P2MDIN=0xDF; // P2.5  analog Input
+P2SKIP=0x20; // Skip P2.5
+REFOCN=0x08; // Set VDD as reference voltage for  ADC
+AMXOP=0x04; // P2.5 as ANIP+
+AMXON=0x1F; //Connect ANIP- to GND for single ended ADC
+ADCOSCF=(((SYSCLK/3000000)-1)<<3);
+ADOEN=1; // Enable ADC
+
+             {
+	ADCOCN=0x90; // Give SOC
+	While(ADOBUSY==1);
+	{
+	// Wait for  EOC
+	}
+	Delay(1);
+	P4= ~ADCOL; // Display 10-bit A/D value on LED
+	Delay(1);
+	P4= ~ADCOH;
+	Delay(1);
+	Value= P4;
+	Convert_display(value);
+	Delay(1000);
+             }
+
+Cmdwrt(0x01);
+Delay(10);
+Cmdwrt(0x38);
+Delay(10);
+Cmdwrt(0x0C);
+Delay(10);
+Cmdwrt(0x80);
+Delay(10);
+
+For(i=0;i<12;i++)
+{
+Datawrt(data1[i]);
+Delay(10);
+}
+
+}
+
+Vovid cmdwrt(unsigned char x)
+{
+LCD_RS = 0;
+    LCD_RW = 0;
+    P4 = x;
+    LCD_EN = 1; // EN pin high->low
+    Delay(10);
+    LCD_EN = 0;
+}
+
+Void datawrt(unsigned char y)
+{
+    LCD_RS = 1;
+    LCD_RW = 0;
+    P4 = y;
+    LCD_EN = 1;  // EN pin high->low
+    Delay(10);
+    LCD_EN = 0;
+}
+
+Void convert_display(unsigned char value)
+{
+unsigned char x1,x2,x3;
+cmdwrt(0xC6); //command to set the cursor to 6th position of 2nd line on 16*2 lcd
+x1=(value/10);  //divide the value by 10 and store quotient in variable x1
+x1=x1+(0x30);  //convert variable x1 to ascii by adding 0x30
+x2=value%10; //divide the value by 10 and store remainder in variable x2
+x2=x2+(0x30);  //convert variable x2 to ascii by adding 0x30
+x3=0xDF; //ascii value of degree(°) symbol
+datawrt(x1); //display temperature on 16*2 lcd display
+datawrt(x2);
+datawrt(x3);
+datawrt(‘c’);
+}
+
+Void delay(unsigned int z)
+{
+unsigned int p,q;
+for(p=0;p<z;p++)//repeat for 'z' times
+{
+For(q=0;q<1375;q++) //repeat for 1375 times
+}
+}
+
+
